@@ -29,6 +29,4 @@ Telegram бот для автоматической рассылки писем 
 ## Быстрый старт
 
 ### 1. Клонируй репо
-```bash
-git clone https://github.com/твой_ник/ai-email-bot
-cd ai-email-bot
+
