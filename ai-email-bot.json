@@ -1,0 +1,239 @@
+{
+  "name": "ai-email-bot",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -512,
+        -272
+      ],
+      "id": "45ed548a-521c-4088-a499-4ba37f6d9967",
+      "name": "Telegram Trigger",
+      "webhookId": "668056c1-ce7a-4b92-848c-fd7227edfb24",
+      "credentials": {
+        "telegramApi": {
+          "id": "qAxyrp0aimcrZgP4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Telegram Trigger').item.json.message.document.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -16,
+        -272
+      ],
+      "id": "44cb2a9a-38ae-464a-bd45-7d7b2cec4150",
+      "name": "Get a file",
+      "webhookId": "458bc830-0ade-439c-bdfe-920512df7a71",
+      "credentials": {
+        "telegramApi": {
+          "id": "qAxyrp0aimcrZgP4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        -272
+      ],
+      "id": "a553611f-761a-4c22-aa78-7d8e0056ca6a",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/chat",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"model\": \"qwen3:4b\",\n  \"stream\": false,\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Ты менеджер по закупкам. ОТВЕЧАЙ ТОЛЬКО НА РУССКОМ ЯЗЫКЕ. Никакого китайского, английского или других языков. Только русский язык. Цель письма — узнать у клиента цену на товар, возможные скидки, условия поставки и варианты сотрудничества. Письмо вежливое, короткое, профессиональное. Подпись — менеджер компании.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Напиши письма ТОЛЬКО НА РУССКОМ ЯЗЫКЕ клиенту: имя={{ $json.поставщик }}, продукт={{ $json.продукт }}, почта={{ $json.почта }}\"\n    }\n  ]\n}",
+        "options": {
+          "timeout": 1000000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        464,
+        -272
+      ],
+      "id": "c4418cb5-64bf-47c3-b004-05df2eaf4336",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "Обрабатываю файл...",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -288,
+        -272
+      ],
+      "id": "2f80eb9d-731a-479f-8a22-29810b888e9c",
+      "name": "Send a text message1",
+      "webhookId": "961307a1-046d-4a5c-bfdd-fcd2fcd6cf01",
+      "credentials": {
+        "telegramApi": {
+          "id": "qAxyrp0aimcrZgP4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "yusin.art@yandex.ru",
+        "toEmail": "={{ $('Extract from File').item.json['почта'] }}",
+        "subject": "=Запрос цен на  {{ $('Extract from File').item.json['продукт'] }}",
+        "emailFormat": "text",
+        "text": "={{ $json.message.content }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        672,
+        -272
+      ],
+      "id": "be43ddbd-fa56-4b72-a6cb-50891d7dc912",
+      "name": "Send an Email",
+      "webhookId": "53de3eb7-559a-42b4-a79f-ca6a1b8e092e",
+      "credentials": {
+        "smtp": {
+          "id": "Xqs3ZrvPyvOh5TXh",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=Запросы созданы и произведена рассылка писем. Пример письма:  {{ $('HTTP Request1').item.json.message.content }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        -272
+      ],
+      "id": "a29b2a94-157d-4871-988b-e79528b77f4c",
+      "name": "Send a text message",
+      "webhookId": "97416161-ef98-4dda-af8a-f49537766e13",
+      "credentials": {
+        "telegramApi": {
+          "id": "qAxyrp0aimcrZgP4",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message1": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send an Email": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "29f87a78-b000-44b0-ac6d-abdc5f1d732d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a691a4b01570f28158b041e4b12377bd1ce95aeffea93e52ce2d57e786feb6e6"
+  },
+  "id": "hnvxCdToLGi7orka",
+  "tags": []
+}
