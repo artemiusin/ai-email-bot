@@ -1,0 +1,585 @@
+{
+  "name": "ai-email-bot",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -512,
+        -96
+      ],
+      "id": "45ed548a-521c-4088-a499-4ba37f6d9967",
+      "name": "Telegram Trigger",
+      "webhookId": "668056c1-ce7a-4b92-848c-fd7227edfb24",
+      "credentials": {
+        "telegramApi": {
+          "id": "qAxyrp0aimcrZgP4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Telegram Trigger').item.json.message.document.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -192,
+        -96
+      ],
+      "id": "44cb2a9a-38ae-464a-bd45-7d7b2cec4150",
+      "name": "Get a file",
+      "webhookId": "458bc830-0ade-439c-bdfe-920512df7a71",
+      "credentials": {
+        "telegramApi": {
+          "id": "qAxyrp0aimcrZgP4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        48,
+        -96
+      ],
+      "id": "a553611f-761a-4c22-aa78-7d8e0056ca6a",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/chat",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"model\": \"qwen3:1.7b\",\n  \"stream\": false,\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Ты менеджер по закупкам. ОТВЕЧАЙ ТОЛЬКО НА РУССКОМ ЯЗЫКЕ. Никакого китайского, английского или других языков. Только русский язык. Цель письма — узнать у клиента цену на товар, возможные скидки, условия поставки и варианты сотрудничества. Письмо вежливое, короткое, профессиональное. Подпись — менеджер компании.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Напиши письма ТОЛЬКО НА РУССКОМ ЯЗЫКЕ клиенту: имя={{ $json.поставщик }}, продукт={{ $json.продукт }}, почта={{ $json.почта }}\"\n    }\n  ]\n}",
+        "options": {
+          "timeout": 1000000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        464,
+        -384
+      ],
+      "id": "c4418cb5-64bf-47c3-b004-05df2eaf4336",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "Обрабатываю файл БЕСПЛАТНОЙ МОДЕЛЬЮ...",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -48,
+        -272
+      ],
+      "id": "2f80eb9d-731a-479f-8a22-29810b888e9c",
+      "name": "Send a text message1",
+      "webhookId": "961307a1-046d-4a5c-bfdd-fcd2fcd6cf01",
+      "credentials": {
+        "telegramApi": {
+          "id": "qAxyrp0aimcrZgP4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "yusin.art@yandex.ru",
+        "toEmail": "={{ $('Extract from File').item.json['почта'] }}",
+        "subject": "=Запрос цен на  {{ $('Extract from File').item.json['продукт'] }}",
+        "emailFormat": "text",
+        "text": "={{ $json.message.content }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        656,
+        -384
+      ],
+      "id": "be43ddbd-fa56-4b72-a6cb-50891d7dc912",
+      "name": "Send an Email",
+      "webhookId": "53de3eb7-559a-42b4-a79f-ca6a1b8e092e",
+      "credentials": {
+        "smtp": {
+          "id": "Xqs3ZrvPyvOh5TXh",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "=БЕСПЛАТНАЯ МОДЕЛЬ. Запросы созданы и произведена рассылка писем. Письма:  {{ $('HTTP Request1').item.json.message.content }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        -384
+      ],
+      "id": "a29b2a94-157d-4871-988b-e79528b77f4c",
+      "name": "Send a text message",
+      "webhookId": "97416161-ef98-4dda-af8a-f49537766e13",
+      "credentials": {
+        "telegramApi": {
+          "id": "qAxyrp0aimcrZgP4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Code in JavaScript').item.json['п/п'] }}{{ $('Code in JavaScript').item.json['Наименование'] }}{{ $('Code in JavaScript').item.json['Марка'] }}\n{{ $('Code in JavaScript').item.json['ТехХар'] }}\n{{ $('Code in JavaScript').item.json['ПроизводительИмя'] }}\n{{ $('Code in JavaScript').item.json['КаталожНомер'] }}{{ $('Code in JavaScript').item.json['БЕИ'] }}{{ $('Code in JavaScript').item.json['Кол-во'] }}\n{{ $('Code in JavaScript').item.json['Почта'] }}\n{{ $('Code in JavaScript').item.json.email_single }}\n{{ $('Code in JavaScript').item.json['К оборудованию'] }}\n",
+        "options": {
+          "systemMessage": "Ты — менеджер по закупкам компании ООО «ПромМашСистем».\n\nЗАДАЧА:\nНаписать запрос коммерческого предложения поставщику , читаемоге, красивого формата.\nПРАВИЛА:\n- Если есть каталожный номер — добавь строку: Каталожный номер: [КаталожНомер]\n- Если есть производитель — добавь строку: Производитель: [ПроизводительИмя] и тд.\n- Без подписи — она добавляется автоматически\n- отправляешь запрос даже если не хватает данных, основываешь на том что есть\nЕсли есть e-mail в поле почта то отправляй на него, не уточняй, нужно ли отправить или нет,если не уверен.\n- Сформулируй только тело письм, \nВозвращай ТОЛЬКО чистый HTML без markdown, без ```html, без ``` в начале и конце. Нужен Только сам текст письма.\n\nсоставь в html формате\n\nСТРОГО следуй этому шаблону письма, не отступай от него (сохрани пустые строки и не добавляй новых, это нужно чтобы сохранить шаблон и красоту письма):\n\n---\nДобрый день.\n\nПрошу направить коммерческое предложение:\n\nНаименование: [Наименование] [Марка]\nТех. требования: [ТехХар]\nКол-во: [Кол-во] [БЕИ]\n\nПрошу ознакомиться с указанной комплектацией и сообщить, если она отличается от комплекта поставки.\nЕсли в запросе указана дополнительная комплектация, включите её, пожалуйста, в счёт/КП.\n\nСпасибо.\n---\nВАЖНО:\nВыдели жирный слово Наименование, технические требования, производитель и количество ( это для читаемости письма нужно)\nСформулируй только тело письм, \nВозвращай ТОЛЬКО чистый HTML без markdown, без ```html, без ``` в начале и конце. Только сам текст письма.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        416,
+        -96
+      ],
+      "id": "6adee601-1306-4d86-9023-e3e48f06e65c",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-sonnet-4-6",
+          "mode": "list",
+          "cachedResultName": "Claude Sonnet 4.6"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        416,
+        128
+      ],
+      "id": "cbd1198d-8127-44fb-a2bb-d9ec6373224d",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "WPbTrxSpUNTCJL3O",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.message }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1776,
+        -112
+      ],
+      "id": "dbf1210f-092b-418d-8547-24242a6616ce",
+      "name": "Send a text message2",
+      "webhookId": "97416161-ef98-4dda-af8a-f49537766e13",
+      "credentials": {
+        "telegramApi": {
+          "id": "qAxyrp0aimcrZgP4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "ikprogres-rus5@yandex.ru",
+        "toEmail": "={{ $('Code in JavaScript').item.json.email_single }}",
+        "subject": "=Запрос коммерческого предложения.",
+        "html": "={{ $('AI Agent').item.json.output }}",
+        "options": {
+          "appendAttribution": false,
+          "attachments": "=data",
+          "bccEmail": "yusin.art@yandex.ru"
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1216,
+        80
+      ],
+      "id": "8a40c535-aef9-4f75-a423-4ca262712a73",
+      "name": "Send an Email1",
+      "webhookId": "53de3eb7-559a-42b4-a79f-ca6a1b8e092e",
+      "credentials": {
+        "smtp": {
+          "id": "Xqs3ZrvPyvOh5TXh",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        480,
+        576
+      ],
+      "id": "48c360b5-6950-42a6-9f2d-21172091407d",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "Обрабатываю файл ",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -352,
+        -96
+      ],
+      "id": "bb8e0f61-cb51-4b62-86d1-20e1924cd7ba",
+      "name": "Send a text message3",
+      "webhookId": "961307a1-046d-4a5c-bfdd-fcd2fcd6cf01",
+      "credentials": {
+        "telegramApi": {
+          "id": "qAxyrp0aimcrZgP4",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "=ikprogres-rus5@yandex.ru",
+        "toEmail": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To_Email', ``, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "html": "={{ $fromAI('HTML', ``, 'string') }}",
+        "options": {
+          "appendAttribution": false,
+          "attachments": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Attachments', `data`, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.emailSendTool",
+      "typeVersion": 2.1,
+      "position": [
+        752,
+        560
+      ],
+      "id": "2d16e0bc-53dc-4ae8-90ce-ec1792a6bd30",
+      "name": "Send an Email in Send Email",
+      "webhookId": "a5e75d46-abfb-4182-9586-a98f9922ef34",
+      "credentials": {
+        "smtp": {
+          "id": "Xqs3ZrvPyvOh5TXh",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = [];\nfor (const item of $input.all()) {\n  const emails = (item.json['Почта'] || '').split(',').map(e => e.trim()).filter(e => e);\n  for (const email of emails) {\n    items.push({\n      json: {\n        ...item.json,\n        email_single: email\n      }\n    });\n  }\n}\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        -96
+      ],
+      "id": "93c9c506-2881-4597-9e9f-418012a000b7",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "fileSelector": "/home/node/.n8n-files/card.doc",
+        "options": {
+          "fileName": "Карточка организации",
+          "dataPropertyName": "data"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        -96
+      ],
+      "id": "44dd408b-6667-4be4-838f-219a4582e3a4",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nreturn [{\n  json: {\n    total: items.length,\n    message: `✅ Рассылка выполнена. Отправлено писем: ${items.length}`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        -112
+      ],
+      "id": "a53111fa-28d0-4522-819a-9e6354048cb8",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1024,
+        -96
+      ],
+      "id": "c64eba3c-9e2f-4b95-be20-c2665a0b8121",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1408,
+        208
+      ],
+      "id": "37475cfa-be8a-45ae-8897-7e21007b83ef",
+      "name": "Wait",
+      "webhookId": "ed967a33-262a-47e1-8b27-7966b17cbc1b"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send a text message3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message1": {
+      "main": [
+        []
+      ]
+    },
+    "Send an Email": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send an Email1": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        []
+      ]
+    },
+    "Send a text message3": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send an Email in Send Email": {
+      "ai_tool": [
+        []
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message2": {
+      "main": [
+        []
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send an Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": -1,
+    "availableInMCP": false
+  },
+  "versionId": "cdb43a7a-d7df-4625-a0f7-3db4e69244c1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a691a4b01570f28158b041e4b12377bd1ce95aeffea93e52ce2d57e786feb6e6"
+  },
+  "id": "hnvxCdToLGi7orka",
+  "tags": []
+}
